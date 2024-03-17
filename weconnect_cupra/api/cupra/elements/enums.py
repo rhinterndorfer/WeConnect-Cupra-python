@@ -31,3 +31,13 @@ class ClimatizationState(Enum,):
     VENTILATION = 'ventilation'
     INVALID = 'invalid'
     UNKNOWN = 'Unknown Climatization State'
+
+
+class ChargeModeState(Enum,):
+        MANUAL = 'manual'
+        TIMER = 'timer'
+        ONLY_OWN_CURRENT = 'onlyOwnCurrent'
+        PREFERRED_CHARGING_TIMES = 'preferredChargingTimes'
+        TIMER_CHARGING_WITH_CLIMATISATION = 'timerChargingWithClimatisation'
+        INVALID = 'invalid'
+        UNKNOWN = 'unknown charge mode'

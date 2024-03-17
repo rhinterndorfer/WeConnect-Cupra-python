@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--target-soc', help='Target state of charge for car', required=False)
     parser.add_argument('--auto-unlock-plug-when-charged', help='Auto unlock plug when charged. One of permanent or off', required=False)
     parser.add_argument('--max-charge-current-ac', help='Set max charge current level. One of maximum or reduced', required=False)
+    parser.add_argument('--mode', help='Charging mode. One of manual, preferredChargingTimes', required=False)
 
     args = parser.parse_args()
 
@@ -36,7 +37,7 @@ def main():
     elif service == Service.MY_CUPRA:
         from weconnect_cupra.elements.control_operation import ControlOperation
         from weconnect_cupra.api.cupra.domain import Domain
-        from weconnect_cupra.api.cupra.elements.enums import MaximumChargeCurrent, UnlockPlugState
+        from weconnect_cupra.api.cupra.elements.enums import MaximumChargeCurrent, UnlockPlugState, ChargeModeState
     weConnect = weconnect_cupra.WeConnect(username=args.username, password=args.password,
         updateAfterLogin=False, loginOnInit=False,
         service=service)
@@ -64,6 +65,16 @@ def main():
                 and 'batteryStatus' in vehicle.domains["charging"] \
                 and vehicle.domains["charging"]["batteryStatus"].enabled:
                 print(vehicle.domains["charging"]["batteryStatus"])
+
+            if "charging" in vehicle.domains \
+                and 'chargingMode' in vehicle.domains["charging"] \
+                and vehicle.domains["charging"]["chargingMode"].enabled:
+                print(vehicle.domains["charging"]["chargingMode"])
+
+            if "status" in vehicle.domains \
+                and 'connectionStatus' in vehicle.domains["status"] \
+                and vehicle.domains["status"]["connectionStatus"].enabled:
+                print(vehicle.domains["status"]["connectionStatus"])
 
             # Maybe change charging state
             if args.state:
@@ -100,6 +111,16 @@ def main():
                         and vehicle.domains['charging']["chargingSettings"].maxChargeCurrentAC.enabled:
                     print('#  set maxChargeCurrentAC')
                     vehicle.domains['charging']["chargingSettings"].maxChargeCurrentAC.value = MaximumChargeCurrent(args.max_charge_current_ac)
+                else:
+                    print('# Charging not supported')
+
+            # Maybe change maxChargeCurrentAC
+            if args.mode:
+                if 'charging' in vehicle.domains \
+                        and vehicle.domains['charging']["chargingMode"].enabled \
+                        and vehicle.domains['charging']["chargingMode"].preferredChargeMode.enabled:
+                    print('#  set mode')
+                    vehicle.domains['charging']["chargingMode"].preferredChargeMode.value = ChargeModeState(args.mode)
                 else:
                     print('# Charging not supported')
 

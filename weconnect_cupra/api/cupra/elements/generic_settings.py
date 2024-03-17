@@ -1,10 +1,11 @@
 from enum import Enum
 import logging
 import json
+from typing import Dict, Any
 
 import requests
 
-from weconnect_cupra.addressable import AddressableLeaf, ChangeableAttribute, AliasChangeableAttribute
+from weconnect_cupra.addressable import AddressableDict, AddressableLeaf, ChangeableAttribute, AliasChangeableAttribute
 from weconnect_cupra.elements.generic_status import GenericStatus
 from weconnect_cupra.elements.error import Error
 from weconnect_cupra.errors import SetterError
@@ -14,6 +15,13 @@ LOG = logging.getLogger("weconnect_cupra")
 
 
 class GenericSettings(GenericStatus):
+    def __init__(self, vehicle, parent: AddressableDict[str, GenericStatus], statusId: str, fromDict: Dict[str, Any] | None = None, fixAPI: bool = True) -> None:
+        super().__init__(vehicle, parent, statusId, fromDict, fixAPI)
+        self.api_version = ''
+        self.action_value = 'settings'
+        self.root_element_name = 'settings'
+        
+
     def valueChanged(self, element, flags):  # noqa: C901
         del element
         if flags & AddressableLeaf.ObserverEvent.VALUE_CHANGED \
@@ -21,6 +29,7 @@ class GenericSettings(GenericStatus):
 
             # Action can be one of 'climatisation' or 'charging'
             action = self.id.partition('Settings')[0]
+            action = action.partition('Mode')[0]
 
             # Valid Cupra Born use cases
             #
@@ -40,7 +49,9 @@ class GenericSettings(GenericStatus):
             #   ClimatizationSettings.zoneFrontRightEnabled -> zoneFrontRightEnabled
 
             # Get current state from api
-            settingsDict = self.vehicle.fetcher.fetchData(f'https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/{self.vehicle.vin.value}/{action}/settings')['settings']
+            settingsDict = self.vehicle.fetcher.fetchData(f'https://ola.prod.code.seat.cloud.vwgroup.com/{self.api_version}vehicles/{self.vehicle.vin.value}/{action}/{self.action_value}')
+            if self.root_element_name != '':
+                settingsDict = settingsDict[self.root_element_name]
 
             # Figure out state
             for child in self.getLeafChildren():
@@ -55,7 +66,7 @@ class GenericSettings(GenericStatus):
 
             # Put new state to API
             putResponse = self.vehicle.fetcher.put(
-                f'https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/{self.vehicle.vin.value}/{action}/requests/settings',
+                f'https://ola.prod.code.seat.cloud.vwgroup.com/{self.api_version}vehicles/{self.vehicle.vin.value}/{action}/requests/{self.action_value}',
                 json=settingsDict,
                 headers={
                     "accept": '*/*',

@@ -18,6 +18,7 @@ from weconnect_cupra.api.cupra.elements.climatization_settings import Climatizat
 from weconnect_cupra.api.cupra.elements.charging_settings import ChargingSettings
 from weconnect_cupra.api.cupra.elements.controls import Controls
 from weconnect_cupra.api.cupra.elements.generic_capability import GenericCapability
+from weconnect_cupra.api.cupra.elements.charge_mode import ChargeMode
 from weconnect_cupra.api.cupra.elements.charging_status import ChargingStatus
 from weconnect_cupra.api.cupra.elements.helpers.request_tracker import RequestTracker
 from weconnect_cupra.api.cupra.elements.battery_status import BatteryStatus
@@ -213,6 +214,8 @@ class Vehicle(AddressableObject):  # pylint: disable=too-many-instance-attribute
         if self.vin.value is None:
             raise APIError('VIN value is not set')
 
+        charging_mode_dict = self.fetcher.fetchData(
+            f'https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/{self.vin.value}/charging/modes')
         charging_settings_dict = self.fetcher.fetchData(
             f'https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/{self.vin.value}/charging/settings')['settings']
         charging_status_dict = self.fetcher.fetchData(
@@ -227,6 +230,7 @@ class Vehicle(AddressableObject):  # pylint: disable=too-many-instance-attribute
 
         jobs = {
             Domain.CHARGING: {
+                'chargingMode': (ChargeMode, charging_mode_dict),
                 'chargingSettings': (ChargingSettings, charging_settings_dict),
                 'chargingStatus': (ChargingStatus, charging_status_dict['charging']),
                 'batteryStatus': (BatteryStatus, charging_status_dict['battery']),
@@ -240,7 +244,6 @@ class Vehicle(AddressableObject):  # pylint: disable=too-many-instance-attribute
             Domain.STATUS: {
                 'connectionStatus': (ConnectionStatus, connection_dict)
             }
-          
         }
 
         for domain_enum, domain_props in jobs.items():
